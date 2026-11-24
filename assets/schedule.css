@@ -1,0 +1,7 @@
+/* The save row of the schedule's inspector section. */
+@layer plugin {
+	.content-schedule-save {
+		display: flex;
+		justify-content: flex-end;
+	}
+}
