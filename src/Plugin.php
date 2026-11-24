@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Cosray\ContentSchedule;
 
+use Cosray\ContentSchedule\Panel\Agenda;
 use Cosray\ContentSchedule\Panel\Planner;
 use Cosray\ContentSchedule\Panel\ScheduleSection;
+use Cosray\ContentSchedule\Panel\Upcoming;
 use Cosray\Plugin\PanelRoutes;
 use Cosray\Plugin\Registrar;
 use Override;
@@ -13,7 +15,7 @@ use Override;
 /**
  * Scheduled publishing: editors plan in a node's editor when it goes
  * online, goes offline or its draft goes live, for the types that carry
- * `#[Schedule]`.
+ * `#[Schedule]`, and see what is planned in an overview.
  */
 final class Plugin implements \Cosray\Plugin\Plugin
 {
@@ -36,13 +38,23 @@ final class Plugin implements \Cosray\Plugin\Plugin
 		$cms->css('schedule.css');
 		$cms->nodeListener(Superseded::class);
 		$cms->inspectorSection(ScheduleSection::class);
+		$cms->dashboardCard(Upcoming::class);
 
 		$cms->panel(static function (PanelRoutes $panel): void {
+			$panel->get('', [Agenda::class, 'index'], 'agenda')->render('content-schedule:agenda');
 			$panel
 				->post('/nodes/{uid:[A-Za-z0-9-_.]{1,64}}', [Planner::class, 'plan'], 'plan')
 				->render(
 					'content-schedule:planned',
 				);
 		});
+
+		// A site that places the link in a section of its own turns this one off.
+		if ($cms->option('nav', true) !== false) {
+			$cms
+				->section('content-schedule:nav-section')
+				->link('content-schedule:nav', $cms->panelUrl())
+				->icon('bi:calendar-event');
+		}
 	}
 }

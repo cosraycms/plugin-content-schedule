@@ -1,7 +1,63 @@
-/* The save row of the schedule's inspector section. */
+/* The schedule's overview page and the save row of its inspector section. */
 @layer plugin {
 	.content-schedule-save {
 		display: flex;
 		justify-content: flex-end;
+	}
+
+	.content-schedule-day {
+		& > h2 {
+			margin: 0;
+			padding: var(--cms-space-3) var(--cms-space-6);
+			border-bottom: 1px solid var(--cms-color-border-soft);
+			background: var(--cms-list-header-bg);
+			color: var(--cms-color-text-muted);
+			font-size: var(--cms-font-size-xs);
+			font-weight: 600;
+		}
+	}
+
+	.content-schedule-time {
+		flex: 0 0 4.5rem;
+		color: var(--cms-color-text);
+		font-size: var(--cms-font-size-sm);
+		font-variant-numeric: tabular-nums;
+	}
+
+	/* A column of its own, so the titles line up whatever the action is called. */
+	.content-schedule-action {
+		flex: 0 0 12rem;
+	}
+
+	.content-schedule-title {
+		flex: 1 1 14rem;
+		min-width: 0;
+		overflow-wrap: anywhere;
+		font-weight: 500;
+
+		& > a {
+			color: var(--cms-color-text);
+			text-decoration: none;
+
+			&:hover,
+			&:focus-visible {
+				text-decoration: underline;
+			}
+		}
+	}
+
+	.content-schedule-meta {
+		color: var(--cms-color-text-subtle);
+		font-size: var(--cms-font-size-xs);
+	}
+
+	.content-schedule-note {
+		flex: 1 1 100%;
+		color: var(--cms-color-danger-text);
+		font-size: var(--cms-font-size-xs);
+
+		[data-state='done'] > & {
+			color: var(--cms-color-text-subtle);
+		}
 	}
 }
