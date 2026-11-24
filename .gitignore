@@ -1,0 +1,8 @@
+/vendor/
+/composer.lock
+/.phpunit.cache/
+/.env
+/AGENTS.md
+/CLAUDE.md
+/.claude/
+/tests/public/cache/

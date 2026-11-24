@@ -1,0 +1,9 @@
+includes:
+	- vendor/celema/quma/phpstan/extension.neon
+
+parameters:
+	level: 8
+	paths:
+		- src
+	treatPhpDocTypesAsCertain: false
+	checkMissingOverrideMethodAttribute: true

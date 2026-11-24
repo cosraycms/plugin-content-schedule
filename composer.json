@@ -1,0 +1,59 @@
+{
+	"name": "cosray/content-schedule",
+	"description": "Plan when a Cosray node goes online, goes offline or its draft goes live",
+	"type": "cosray-plugin",
+	"license": "MIT",
+	"authors": [
+		{
+			"name": "Ernst",
+			"email": "ernst@cosray.dev"
+		}
+	],
+	"homepage": "https://cosray.dev",
+	"minimum-stability": "dev",
+	"prefer-stable": true,
+	"require": {
+		"php": "^8.5",
+		"ext-intl": "*",
+		"cosray/cms": "dev-main"
+	},
+	"require-dev": {
+		"carthage-software/mago": "1.50.0",
+		"nyholm/psr7": "^1.8",
+		"nyholm/psr7-server": "^1.1",
+		"phpstan/phpstan": "2.3.1",
+		"phpunit/phpunit": "^13.4.6"
+	},
+	"autoload": {
+		"psr-4": {
+			"Cosray\\ContentSchedule\\": "src"
+		}
+	},
+	"autoload-dev": {
+		"psr-4": {
+			"Cosray\\ContentSchedule\\Tests\\": "tests"
+		}
+	},
+	"scripts": {
+		"test": [
+			"Composer\\Config::disableProcessTimeout",
+			"@php vendor/bin/phpunit --testdox --no-coverage --colors=always"
+		],
+		"types": "@php vendor/bin/phpstan analyse --no-progress",
+		"lint": [
+			"@php vendor/bin/mago fmt --check",
+			"@php vendor/bin/mago lint"
+		],
+		"check": [
+			"Composer\\Config::disableProcessTimeout",
+			"@lint",
+			"@types",
+			"@test"
+		],
+		"docs:format": "npx prettier@3.6.2 --write README.md",
+		"docs:lint": "npx markdownlint-cli2@0.22.1 README.md"
+	},
+	"config": {
+		"sort-packages": true
+	}
+}

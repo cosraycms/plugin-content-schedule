@@ -1,0 +1,34 @@
+SELECT
+	p.plan,
+	p.node,
+	p.type,
+	p.action,
+	p.due,
+	p.planner,
+	COALESCE(u.data->>'name', u.username, u.email) AS planner_name,
+	p.planned,
+	p.state,
+	p.ran,
+	p.note,
+	COUNT(*) OVER () AS total
+FROM
+	/*:content-schedule.prefix:*/plans p
+	INNER JOIN /*:cms.prefix:*/users u ON u.usr = p.planner
+WHERE
+	p.state = :state
+	AND p.type IN (SELECT jsonb_array_elements_text(CAST(:types AS jsonb)))
+<?php if (isset($action)) : ?>
+	AND p.action = :action
+<?php endif ?>
+<?php if (isset($days)) : ?>
+	AND p.ran >= now() - make_interval(days => :days)
+<?php endif ?>
+ORDER BY
+<?php if ($state === 'pending') : ?>
+	p.due,
+	p.plan
+<?php else : ?>
+	p.ran DESC,
+	p.plan DESC
+<?php endif ?>
+LIMIT :limit OFFSET :offset;

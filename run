@@ -1,0 +1,27 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use Celema\Verba\Command\StatusCommand;
+use Celema\Verba\Command\SyncCommand;
+use Celema\Verba\Tool\Domain;
+use Celema\Verba\Tool\PhpScanner;
+use Cosray\Console\Commands;
+
+require __DIR__ . '/vendor/autoload.php';
+
+// The test app: `php run db:migrations --namespace=install --apply`, then
+// `php run db:migrations --apply`, sets up the test database.
+$commands = new Commands((require __DIR__ . '/tests/app.php')());
+
+$domain = new Domain(
+	name: 'content-schedule',
+	dir: __DIR__ . '/lang',
+	locales: ['de', 'en', 'es', 'fr', 'it', 'nl', 'pl', 'pt'],
+	scanners: [new PhpScanner([__DIR__ . '/src', __DIR__ . '/views'])],
+	default: true,
+);
+$commands->add([new SyncCommand([$domain]), new StatusCommand([$domain])]);
+
+exit($commands->runner()->run());
