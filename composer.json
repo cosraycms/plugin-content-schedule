@@ -50,8 +50,8 @@
 			"@types",
 			"@test"
 		],
-		"docs:format": "npx prettier@3.6.2 --write README.md",
-		"docs:lint": "npx markdownlint-cli2@0.22.1 README.md"
+		"docs:format": "npx prettier@3.6.2 --write README.md CHANGELOG.md",
+		"docs:lint": "npx markdownlint-cli2@0.22.1 README.md CHANGELOG.md"
 	},
 	"config": {
 		"sort-packages": true
