@@ -262,6 +262,34 @@ final class EditorTest extends TestCase
 		);
 	}
 
+	public function testBothTimesInOneMinuteAreRefused(): void
+	{
+		$this->actingAs($this->user(roles: ['editor']));
+		$this->node('both', 'Both', published: true);
+		$this->node('moved', 'Moved', published: true);
+		$this->plans()->plan('moved', Action::Publish, new DateTimeImmutable('+2 days 30 seconds'), Actor::system());
+		$planned = $this->plans()->of('moved')[Action::Publish->value]->due;
+		$refused = '//*[@data-toast="error"][contains(., "“Online from” and “Offline from” need different times.")]';
+
+		$new = $this->html($this->plan('both', [
+			'do' => 'save',
+			'due' => [
+				'publish' => $this->input('+2 days'),
+				'unpublish' => $this->input('+2 days'),
+			],
+		]));
+		// The pending plan's seconds are not shown, and still fall in the minute.
+		$joined = $this->html($this->plan('moved', [
+			'do' => 'save',
+			'due' => ['unpublish' => $planned->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i')],
+		]));
+
+		$this->assertSame(1, $this->found($refused, $new));
+		$this->assertSame(1, $this->found($refused, $joined));
+		$this->assertSame([], $this->plans()->of('both'));
+		$this->assertSame([Action::Publish->value], array_keys($this->plans()->of('moved')));
+	}
+
 	public function testATimeInThePastIsRefusedAndNothingIsSaved(): void
 	{
 		$this->actingAs($this->user(roles: ['editor']));

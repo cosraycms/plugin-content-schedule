@@ -157,8 +157,9 @@ final class Planner extends Panel
 	}
 
 	/**
-	 * A node that is offline has nothing to take offline until a plan brings
-	 * it online, which has to come first.
+	 * Two times in one minute would run in no certain order. A node that is
+	 * offline has nothing to take offline until a plan brings it online,
+	 * which has to come first.
 	 *
 	 * @param array<string, DateTimeImmutable> $times the due times by action
 	 */
@@ -166,6 +167,14 @@ final class Planner extends Panel
 	{
 		$publish = $times[Action::Publish->value] ?? null;
 		$unpublish = $times[Action::Unpublish->value] ?? null;
+
+		if (
+			$publish !== null
+			&& $unpublish !== null
+			&& intdiv($publish->getTimestamp(), 60) === intdiv($unpublish->getTimestamp(), 60)
+		) {
+			return Labels::same($routable);
+		}
 
 		if ($online || $unpublish === null || $publish !== null && $publish < $unpublish) {
 			return null;

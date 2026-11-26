@@ -59,6 +59,12 @@ final class Labels
 		return $routable ? __('content-schedule:offline-alone') : __('content-schedule:inactive-alone');
 	}
 
+	/** Why the two times of a node may not fall in the same minute. */
+	public static function same(bool $routable): string
+	{
+		return $routable ? __('content-schedule:offline-same') : __('content-schedule:inactive-same');
+	}
+
 	public static function state(string $state): string
 	{
 		return match ($state) {
