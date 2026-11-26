@@ -27,46 +27,53 @@ final class EditorTest extends TestCase
 {
 	private const string SECTION = '//section[@id="cms-inspector-section-content-schedule"]';
 
-	public function testAnOfflineNodeCanBePlannedToGoOnline(): void
+	public function testTheSectionOffersATimeToGoOnlineAndOneToGoOffline(): void
 	{
 		$this->actingAs($this->user(roles: ['editor']));
 		$this->node('fresh', 'Fresh');
 
 		$html = $this->html($this->get('/panel/node/fresh'));
 
-		$this->assertSame(['Goes online'], $this->labels($html));
+		$this->assertSame(['Online from', 'Offline from'], $this->labels($html));
 		$this->assertSame(1, $this->found(
 			'//form[@id="cms-inspector-form-content-schedule" and @action="/panel/content-schedule/nodes/fresh"]',
 			$html,
 		));
-		$this->assertSame(1, $this->found(
-			self::SECTION
-				. '//input[@type="datetime-local" and @name="due[publish]" and @value=""'
-				. ' and @form="cms-inspector-form-content-schedule"]',
-			$html,
-		));
+
+		foreach (['publish', 'unpublish'] as $action) {
+			$this->assertSame(1, $this->found(
+				self::SECTION
+					. '//input[@type="datetime-local" and @name="due['
+					. $action
+					. ']" and @value=""'
+					. ' and @form="cms-inspector-form-content-schedule"]',
+				$html,
+			));
+		}
 	}
 
-	public function testAnOnlineNodeCanBePlannedToUpdateAndToGoOffline(): void
+	public function testAnOnlineNodeIsOfferedTheSameTimes(): void
 	{
 		$this->actingAs($this->user(roles: ['editor']));
 		$this->node('live', 'Live', published: true);
 
-		$this->assertSame(
-			['Draft goes live', 'Goes offline'],
-			$this->labels($this->html($this->get('/panel/node/live'))),
-		);
+		$this->assertSame(['Online from', 'Offline from'], $this->labels($this->html($this->get('/panel/node/live'))));
 	}
 
-	public function testATypeWithoutARouteOrDraftsIsWordedByWhatItDoes(): void
+	public function testATypeWithoutARouteIsWordedAsActiveAndInactive(): void
 	{
 		$this->actingAs($this->user(roles: ['editor']));
 		$this->node('inactive', 'Inactive', class: Setting::class);
 		$this->node('active', 'Active', published: true, class: Setting::class);
 
-		$this->assertSame(['Becomes active'], $this->labels($this->html($this->get('/panel/node/inactive'))));
-		// Saved directly, it has no draft a plan could bring live.
-		$this->assertSame(['Becomes inactive'], $this->labels($this->html($this->get('/panel/node/active'))));
+		$this->assertSame(
+			['Active from', 'Inactive from'],
+			$this->labels($this->html($this->get('/panel/node/inactive'))),
+		);
+		$this->assertSame(
+			['Active from', 'Inactive from'],
+			$this->labels($this->html($this->get('/panel/node/active'))),
+		);
 	}
 
 	public function testATypeWithoutTheAttributeHasNoSchedule(): void
@@ -93,8 +100,6 @@ final class EditorTest extends TestCase
 			self::SECTION . '[@hx-swap-oob="true"]//input[@name="due[publish]" and @value="' . $due . '"]',
 			$html,
 		));
-		// Planned to go online, it can be planned to go offline again.
-		$this->assertSame(['Goes online', 'Goes offline'], $this->labels($html));
 		$this->assertSame(1, $this->found(
 			self::SECTION
 				. '//button[@name="do" and @value="cancel:publish" and @form="cms-inspector-form-content-schedule"]',
@@ -143,7 +148,7 @@ final class EditorTest extends TestCase
 
 		$this->assertSame([], $this->plans()->of('emptied'));
 		$this->assertSame(1, $this->found('//*[@data-toast="success"][contains(., "Schedule saved")]', $html));
-		$this->assertSame(['Goes online'], $this->labels($html));
+		$this->assertSame(1, $this->found(self::SECTION . '//input[@name="due[publish]" and @value=""]', $html));
 	}
 
 	public function testRemovingCancelsOnePlan(): void
@@ -222,10 +227,11 @@ final class EditorTest extends TestCase
 			['HX-Request' => 'true'],
 		));
 
-		// Online now, its plan to go online is gone, and the section offers what fits.
 		$this->assertSame([], $this->plans()->of('byhand'));
-		$this->assertSame(['Draft goes live', 'Goes offline'], $this->labels($html));
-		$this->assertSame(1, $this->found(self::SECTION . '[@hx-swap-oob="true"]', $html));
+		$this->assertSame(1, $this->found(
+			self::SECTION . '[@hx-swap-oob="true"]//input[@name="due[publish]" and @value=""]',
+			$html,
+		));
 	}
 
 	/** @param array<string, mixed> $form */

@@ -99,14 +99,12 @@ final class Agenda extends Panel
 		$format = Format::of($this->request, $this->config);
 		$links = new NodeUrls($this->panelPath());
 		$titles = [];
-		$online = [];
 
 		if ($plans !== []) {
 			$uids = array_values(array_unique(array_column($plans, 'node')));
 
 			foreach ($cms->nodes->published(null)->hidden(null)->only(...$uids) as $node) {
 				$titles[$node->meta->uid] = $node->label();
-				$online[$node->meta->uid] = (bool) $node->meta->get('published');
 			}
 		}
 
@@ -122,13 +120,8 @@ final class Agenda extends Panel
 				'time' => $format->time($at),
 				'due' => $pending ? null : $format->dateTime($plan->due),
 				'action' => $plan->action->value,
-				// A pending plan is worded as in the editor, by what it will do to the node as it is.
 				'actionLabel' => $pending
-					? Labels::field(
-						$plan->action,
-						$online[$plan->node] ?? false,
-						$types[$plan->type]['routable'] ?? true,
-					)[0]
+					? Labels::pending($plan->action, $types[$plan->type]['routable'] ?? true)
 					: Labels::action($plan->action),
 				'state' => $plan->state,
 				'overdue' => $pending && $plan->due < $now,

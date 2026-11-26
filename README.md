@@ -1,6 +1,6 @@
 # Content schedule for Cosray
 
-A Cosray plugin for scheduled publishing. In a node's editor, an editor plans when the node goes online, when it goes offline, or when the draft of an online node goes live. An overview lists what is planned across the site.
+A Cosray plugin for scheduled publishing. In a node's editor, an editor plans when the node goes online and when it goes offline. Going online brings the changes saved by then live, so the same time plans an update of a node that is online. An overview lists what is planned across the site.
 
 Nothing about a plan is checked when visitors read the site. At the planned time a job does what the editor would do by hand, so the node's history, webhooks, the API's sync and search all see an ordinary publication.
 
@@ -39,22 +39,16 @@ The attribute takes no arguments. A `#[Record]` has no publication, so it cannot
 
 ## In the editor
 
-A scheduled type's editor shows a Schedule section in the inspector's status tab, below the publication switch. It offers a time for each action that fits the node:
+A scheduled type's editor shows a Schedule section in the inspector's status tab, below the publication switch. It offers two times, whatever the node's state: Online from and Offline from. A type without a route words them as Active from and Inactive from, as the rest of the panel words its publication.
 
-| The node is                   | The section offers            |
-| ----------------------------- | ----------------------------- |
-| offline                       | Goes online                   |
-| online                        | Draft goes live, Goes offline |
-| offline, planned to go online | Goes online, Goes offline     |
-
-A type without a route is worded as active and inactive, as in the rest of the panel. An online node of a type with `#[Drafts(false)]` has no draft to bring live, so it only offers going offline.
+Online from brings the node online with the changes saved by then; for a node that is online already, it brings only those changes live. Offline from takes the node offline. Together the two times make a window or, for a node that is online, a pause.
 
 Saving the schedule plans each time given, moves a plan whose time changed and cancels one whose time was emptied; Remove cancels a single plan. All of this takes effect at once, apart from saving the node, and does not count as an edit of it. Times are entered and shown in the panel's time zone, and a time in the past is refused. Planning needs the permission to change the node's type.
 
 ## What a plan does
 
-- **Goes online, Draft goes live:** the node's working copy, if it has one, is applied and the node is online, as applying and publishing in the editor does. The working copy is taken as it is at that time, so editors can keep writing until then. Edits a user has not saved are not part of it.
-- **Goes offline:** the node is taken offline. Its content and working copy stay as they are.
+- **Online from:** the node's working copy, if it has one, is applied and the node is online, as applying and publishing in the editor does. The working copy is taken as it is at that time, so editors can keep writing until then. Edits a user has not saved are not part of it.
+- **Offline from:** the node is taken offline. Its content and working copy stay as they are.
 
 A node has at most one pending plan per action. The events a plan writes name the user who planned it, with `{"source": "content-schedule", "planned": …}` as their cause. That user's permission is checked when the plan is made, not when it runs, so the plan of someone who has left still runs.
 

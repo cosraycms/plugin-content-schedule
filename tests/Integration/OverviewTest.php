@@ -75,10 +75,9 @@ final class OverviewTest extends TestCase
 		$this->assertSame(2, substr_count($html, 'class="content-schedule-day"'));
 		$this->assertMatchesRegularExpression('~Upcoming\s*<span class="cms-kit-filter-count">2</span>~', $html);
 		$this->assertStringNotContainsString('overdue', $html);
-		$this->assertStringNotContainsString('Draft goes live', $html);
 	}
 
-	public function testAPendingPlanIsWordedByWhatItWillDoToItsNode(): void
+	public function testAPendingPlanIsWordedByWhetherItsTypeHasARoute(): void
 	{
 		$this->actingAs($this->user(roles: ['editor']));
 		$this->node('update', 'Online already', published: true);
@@ -88,7 +87,7 @@ final class OverviewTest extends TestCase
 
 		$html = $this->html($this->get('/panel/content-schedule'));
 
-		$this->assertMatchesRegularExpression('~Draft goes live</span>(?:(?!</li>).)*Online already~s', $html);
+		$this->assertMatchesRegularExpression('~Goes online</span>(?:(?!</li>).)*Online already~s', $html);
 		$this->assertMatchesRegularExpression('~Becomes active</span>(?:(?!</li>).)*A setting~s', $html);
 	}
 

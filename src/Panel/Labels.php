@@ -16,37 +16,40 @@ final class Labels
 	/**
 	 * What a time in the editor's section stands for, and its help line. A
 	 * type with a route goes online and offline, one without becomes active
-	 * and inactive; online, publishing brings the draft live.
+	 * and inactive.
 	 *
 	 * @return array{string, string}
 	 */
-	public static function field(Action $action, bool $online, bool $routable): array
+	public static function field(Action $action, bool $routable): array
 	{
 		return match (true) {
-			$action === Action::Unpublish && $routable => [
-				__('content-schedule:unpublish'),
-				__('content-schedule:unpublish-help'),
+			$action === Action::Publish && $routable => [
+				__('content-schedule:online-from'),
+				__('content-schedule:online-from-help'),
 			],
-			$action === Action::Unpublish => [
-				__('content-schedule:deactivate'),
-				__('content-schedule:deactivate-help'),
-			],
-			$online && $routable => [
-				__('content-schedule:publish-draft'),
-				__('content-schedule:publish-draft-help'),
-			],
-			$online => [
-				__('content-schedule:activate-draft'),
-				__('content-schedule:activate-draft-help'),
+			$action === Action::Publish => [
+				__('content-schedule:active-from'),
+				__('content-schedule:active-from-help'),
 			],
 			$routable => [
-				__('content-schedule:publish'),
-				__('content-schedule:publish-help'),
+				__('content-schedule:offline-from'),
+				__('content-schedule:offline-from-help'),
 			],
 			default => [
-				__('content-schedule:activate'),
-				__('content-schedule:activate-help'),
+				__('content-schedule:inactive-from'),
+				__('content-schedule:inactive-from-help'),
 			],
+		};
+	}
+
+	/** What a pending plan will do, worded by whether its type has a route. */
+	public static function pending(Action $action, bool $routable): string
+	{
+		return match (true) {
+			$action === Action::Publish && $routable => __('content-schedule:publish'),
+			$action === Action::Publish => __('content-schedule:activate'),
+			$routable => __('content-schedule:unpublish'),
+			default => __('content-schedule:deactivate'),
 		};
 	}
 
