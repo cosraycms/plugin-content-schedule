@@ -60,7 +60,8 @@ final class Planner extends Panel
 			: $this->remove($plans, $uid, $cancel, $online, $routable);
 
 		return [
-			'section' => $sections->section($node),
+			// Refused, the section stays as the editor filled it in.
+			'section' => $kind === 'error' ? null : $sections->section($node),
 			'kind' => $kind,
 			'message' => $message,
 		];

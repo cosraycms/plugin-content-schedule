@@ -308,6 +308,8 @@ final class EditorTest extends TestCase
 			'//*[@data-toast="error"][contains(., "Choose a time in the future.")]',
 			$html,
 		));
+		// Not swapped in again, the section keeps the times the editor entered.
+		$this->assertSame(0, $this->found(self::SECTION, $html));
 	}
 
 	public function testWhatIsNoTimeIsRefused(): void
