@@ -53,6 +53,12 @@ final class Labels
 		};
 	}
 
+	/** Why a node that is offline may not be planned to go offline without going online before. */
+	public static function alone(bool $routable): string
+	{
+		return $routable ? __('content-schedule:offline-alone') : __('content-schedule:inactive-alone');
+	}
+
 	public static function state(string $state): string
 	{
 		return match ($state) {

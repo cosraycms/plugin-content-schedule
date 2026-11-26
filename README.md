@@ -43,7 +43,7 @@ A scheduled type's editor shows a Schedule section in the inspector's status tab
 
 Online from brings the node online with the changes saved by then; for a node that is online already, it brings only those changes live. Offline from takes the node offline. Together the two times make a window or, for a node that is online, a pause.
 
-Saving the schedule plans each time given, moves a plan whose time changed and cancels one whose time was emptied; Remove cancels a single plan. All of this takes effect at once, apart from saving the node, and does not count as an edit of it. Times are entered and shown in the panel's time zone, and a time in the past is refused. Planning needs the permission to change the node's type.
+Saving the schedule plans each time given, moves a plan whose time changed and cancels one whose time was emptied; Remove cancels a single plan. All of this takes effect at once, apart from saving the node, and does not count as an edit of it. Times are entered and shown in the panel's time zone, and a time in the past is refused. A node that is offline has nothing to take offline, so its time to go offline needs an earlier time to go online. Planning needs the permission to change the node's type.
 
 ## What a plan does
 

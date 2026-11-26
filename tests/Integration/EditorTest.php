@@ -74,6 +74,16 @@ final class EditorTest extends TestCase
 			['Active from', 'Inactive from'],
 			$this->labels($this->html($this->get('/panel/node/active'))),
 		);
+
+		$html = $this->html($this->plan('inactive', [
+			'do' => 'save',
+			'due' => ['unpublish' => $this->input('+1 day')],
+		]));
+
+		$this->assertSame(1, $this->found(
+			'//*[@data-toast="error"][contains(., "The entry is inactive: “Inactive from” needs an earlier “Active from”.")]',
+			$html,
+		));
 	}
 
 	public function testATypeWithoutTheAttributeHasNoSchedule(): void
@@ -171,6 +181,85 @@ final class EditorTest extends TestCase
 		$this->assertSame([Action::Publish->value], array_keys($plans));
 		$this->assertEqualsWithDelta(time() + (2 * 86400), $plans[Action::Publish->value]->due->getTimestamp(), 5);
 		$this->assertSame(1, $this->found('//*[@data-toast="success"][contains(., "Plan removed")]', $html));
+	}
+
+	public function testAnOfflineNodeIsPlannedToGoOfflineOnlyAfterItGoesOnline(): void
+	{
+		$this->actingAs($this->user(roles: ['editor']));
+		$this->node('draft', 'Draft');
+		$refused = '//*[@data-toast="error"][contains(., "The page is offline: “Offline from” needs an earlier “Online from”.")]';
+
+		$alone = $this->html($this->plan('draft', [
+			'do' => 'save',
+			'due' => [
+				'publish' => '',
+				'unpublish' => $this->input('+2 days'),
+			],
+		]));
+		$late = $this->html($this->plan('draft', [
+			'do' => 'save',
+			'due' => [
+				'publish' => $this->input('+3 days'),
+				'unpublish' => $this->input('+2 days'),
+			],
+		]));
+
+		$this->assertSame(1, $this->found($refused, $alone));
+		$this->assertSame(1, $this->found($refused, $late));
+		$this->assertSame([], $this->plans()->of('draft'));
+
+		$html = $this->html($this->plan('draft', [
+			'do' => 'save',
+			'due' => [
+				'publish' => $this->input('+1 day'),
+				'unpublish' => $this->input('+2 days'),
+			],
+		]));
+
+		$this->assertSame(1, $this->found('//*[@data-toast="success"][contains(., "Schedule saved")]', $html));
+		$this->assertSame([Action::Publish->value, Action::Unpublish->value], array_keys($this->plans()->of('draft')));
+	}
+
+	public function testAnOfflineNodeKeepsItsTimeToGoOnlineWhileItIsPlannedToGoOffline(): void
+	{
+		$this->actingAs($this->user(roles: ['editor']));
+		$this->node('event', 'Event');
+		$this->plans()->plan('event', Action::Publish, new DateTimeImmutable('+1 day'), Actor::system());
+		$this->plans()->plan('event', Action::Unpublish, new DateTimeImmutable('+2 days'), Actor::system());
+		$kept = $this->plans()->of('event')[Action::Unpublish->value];
+
+		$removed = $this->html($this->plan('event', ['do' => 'cancel:publish']));
+		$emptied = $this->html($this->plan('event', [
+			'do' => 'save',
+			'due' => [
+				'publish' => '',
+				'unpublish' => $kept->due->setTimezone(new DateTimeZone('UTC'))->format('Y-m-d\TH:i'),
+			],
+		]));
+
+		$this->assertSame(1, $this->found('//*[@data-toast="error"]', $removed));
+		$this->assertSame(1, $this->found('//*[@data-toast="error"]', $emptied));
+		$this->assertSame([Action::Publish->value, Action::Unpublish->value], array_keys($this->plans()->of('event')));
+	}
+
+	public function testAnOnlineNodeMayGoOfflineAndComeBack(): void
+	{
+		$this->actingAs($this->user(roles: ['editor']));
+		$this->node('pause', 'Pause', published: true);
+
+		$html = $this->html($this->plan('pause', [
+			'do' => 'save',
+			'due' => [
+				'publish' => $this->input('+5 days'),
+				'unpublish' => $this->input('+2 days'),
+			],
+		]));
+
+		$this->assertSame(1, $this->found('//*[@data-toast="success"][contains(., "Schedule saved")]', $html));
+		$this->assertEqualsCanonicalizing(
+			[Action::Publish->value, Action::Unpublish->value],
+			array_keys($this->plans()->of('pause')),
+		);
 	}
 
 	public function testATimeInThePastIsRefusedAndNothingIsSaved(): void

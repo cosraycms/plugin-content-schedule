@@ -8,6 +8,7 @@ use Celema\Core\Exception\HttpForbidden;
 use Celema\Core\Exception\HttpNotFound;
 use Cosray\Cms;
 use Cosray\ContentSchedule\Action;
+use Cosray\ContentSchedule\Plan;
 use Cosray\ContentSchedule\Plans;
 use Cosray\Context;
 use Cosray\Controller\Panel\Panel;
@@ -33,7 +34,8 @@ final class Planner extends Panel
 	{
 		$node = $cms->node->working($uid) ?? throw new HttpNotFound($this->request);
 		$class = Wrapper::unwrap($node)::class;
-		$plans = new Plans($context, $cms, $this->container->instance(Types::class));
+		$types = $this->container->instance(Types::class);
+		$plans = new Plans($context, $cms, $types);
 
 		if (!$plans->schedules($class)) {
 			throw new HttpNotFound($this->request);
@@ -51,9 +53,11 @@ final class Planner extends Panel
 				? substr((string) $form['do'], 7)
 				: '',
 		);
+		$online = (bool) $node->meta->get('published');
+		$routable = (bool) $types->get($class, 'routable', false);
 		[$kind, $message] = $cancel === null
-			? $this->save($plans, $uid, is_array($form['due'] ?? null) ? $form['due'] : [])
-			: ['success', $plans->cancel($uid, $cancel) ? __('content-schedule:removed') : null];
+			? $this->save($plans, $uid, is_array($form['due'] ?? null) ? $form['due'] : [], $online, $routable)
+			: $this->remove($plans, $uid, $cancel, $online, $routable);
 
 		return [
 			'section' => $sections->section($node),
@@ -63,15 +67,17 @@ final class Planner extends Panel
 	}
 
 	/**
-	 * Nothing is saved unless every time given is a time in the future.
+	 * Nothing is saved unless every time given is a time in the future and
+	 * the schedule they make is one a node in its state can follow.
 	 *
 	 * @param array<array-key, mixed> $due the times by action, as the inputs sent them
 	 * @return array{string, ?string} the kind and the message of the toast
 	 */
-	private function save(Plans $plans, string $uid, array $due): array
+	private function save(Plans $plans, string $uid, array $due, bool $online, bool $routable): array
 	{
 		$format = Format::of($this->request, $this->config);
 		$pending = $plans->of($uid);
+		$times = self::times($pending);
 		$now = new DateTimeImmutable();
 		$changes = [];
 
@@ -86,7 +92,10 @@ final class Planner extends Panel
 			$plan = $pending[$action->value] ?? null;
 
 			if (trim($value) === '') {
-				$changes[] = [$action, null];
+				if ($plan !== null) {
+					$changes[] = [$action, null];
+					unset($times[$action->value]);
+				}
 
 				continue;
 			}
@@ -107,21 +116,70 @@ final class Planner extends Panel
 			}
 
 			$changes[] = [$action, $at];
+			$times[$action->value] = $at;
 		}
 
-		$changed = false;
+		if ($changes === []) {
+			return ['success', null];
+		}
+
+		$refusal = self::refusal($times, $online, $routable);
+
+		if ($refusal !== null) {
+			return ['error', $refusal];
+		}
 
 		foreach ($changes as [$action, $at]) {
 			if ($at === null) {
-				$changed = $plans->cancel($uid, $action) || $changed;
+				$plans->cancel($uid, $action);
 
 				continue;
 			}
 
 			$plans->plan($uid, $action, $at, $this->actor());
-			$changed = true;
 		}
 
-		return ['success', $changed ? __('content-schedule:saved') : null];
+		return ['success', __('content-schedule:saved')];
+	}
+
+	/** @return array{string, ?string} the kind and the message of the toast */
+	private function remove(Plans $plans, string $uid, Action $action, bool $online, bool $routable): array
+	{
+		$times = self::times($plans->of($uid));
+		unset($times[$action->value]);
+		$refusal = self::refusal($times, $online, $routable);
+
+		if ($refusal !== null) {
+			return ['error', $refusal];
+		}
+
+		return ['success', $plans->cancel($uid, $action) ? __('content-schedule:removed') : null];
+	}
+
+	/**
+	 * A node that is offline has nothing to take offline until a plan brings
+	 * it online, which has to come first.
+	 *
+	 * @param array<string, DateTimeImmutable> $times the due times by action
+	 */
+	private static function refusal(array $times, bool $online, bool $routable): ?string
+	{
+		$publish = $times[Action::Publish->value] ?? null;
+		$unpublish = $times[Action::Unpublish->value] ?? null;
+
+		if ($online || $unpublish === null || $publish !== null && $publish < $unpublish) {
+			return null;
+		}
+
+		return Labels::alone($routable);
+	}
+
+	/**
+	 * @param array<string, Plan> $pending
+	 * @return array<string, DateTimeImmutable>
+	 */
+	private static function times(array $pending): array
+	{
+		return array_map(static fn(Plan $plan): DateTimeImmutable => $plan->due, $pending);
 	}
 }
